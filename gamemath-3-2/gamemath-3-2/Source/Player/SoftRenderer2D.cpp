@@ -94,6 +94,7 @@ void SoftRenderer::Render2D()
 			for (float y = -Radius; y <= Radius; ++y)
 			{
 				Vector2 PointToTest = Vector2(x, y);
+				printf("%d", PointToTest.X);
 			}
 		}
 	}
