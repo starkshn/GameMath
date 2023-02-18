@@ -83,7 +83,6 @@ void SoftRenderer::Render2D()
 	DrawGizmo2D();
 
 	// 렌더링 로직의 로컬 변수
-
 	static float Radius = 50.f;
 	static std::vector<Vector2> Circles;
 
@@ -94,11 +93,23 @@ void SoftRenderer::Render2D()
 			for (float y = -Radius; y <= Radius; ++y)
 			{
 				Vector2 PointToTest = Vector2(x, y);
-				printf("%d", PointToTest.X);
+				float SquarLength = PointToTest.SizeSquared(); // 벡터의 크기를 구할 때 제곱근을 씌우지 않은 값 즉 x^2 + y^2
+				if (SquarLength <= Radius * Radius)
+				{
+					Circles.push_back(Vector2(x, y));
+				}
 			}
 		}
 	}
 
+	// 원을 구성하는 모든 벡터를 Red로 표시
+	for (auto const& v : Circles)
+	{
+		r.DrawPoint(v + currentPosition, LinearColor::Red);
+	}
+
+	// 원의 중심 좌표를 우상단에 출력
+	r.PushStatisticText("Coordinate : " + currentPosition.ToString());
 }
 
 // 메시를 그리는 함수
