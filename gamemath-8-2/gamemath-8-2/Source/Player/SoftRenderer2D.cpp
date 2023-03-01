@@ -98,14 +98,16 @@ void SoftRenderer::Render2D()
 	static constexpr size_t triangleCount = 2;
 
 	// 메시를 구성하는 정점 배열과 인덱스 배열의 생성
-	static constexpr std::array<Vertex2D, vertexCount> rawVertices = {
+	static constexpr std::array<Vertex2D, vertexCount> rawVertices = 
+	{
 		Vertex2D(Vector2(-squareHalfSize, -squareHalfSize)),
 		Vertex2D(Vector2(-squareHalfSize, squareHalfSize)),
 		Vertex2D(Vector2(squareHalfSize, squareHalfSize)),
 		Vertex2D(Vector2(squareHalfSize, -squareHalfSize))
 	};
 
-	static constexpr std::array<size_t, triangleCount * 3> indices = {
+	static constexpr std::array<size_t, triangleCount * 3> indices = 
+	{
 		0, 1, 2,
 		0, 2, 3
 	};
@@ -144,9 +146,73 @@ void SoftRenderer::Render2D()
 	for (size_t ti = 0; ti < triangleCount; ++ti)
 	{
 		size_t bi = ti * 3;
-		r.DrawLine(vertices[indices[bi]].Position, vertices[indices[bi + 1]].Position, _WireframeColor);
-		r.DrawLine(vertices[indices[bi]].Position, vertices[indices[bi + 2]].Position, _WireframeColor);
-		r.DrawLine(vertices[indices[bi + 1]].Position, vertices[indices[bi + 2]].Position, _WireframeColor);
+
+		// 삼각형을 구성하는 세좀을 배열 tv에 보관한다.
+		std::array<Vertex2D, 3> tv = {vertices[indices[bi]], vertices[indices[bi + 1]], vertices[indices[bi + 2]]};
+
+		// tv의 X, Y의 최소값을 minPos에 저장한다.
+		Vector2 minPos
+		(
+			Math::Min3(tv[0].Position.X, tv[1].Position.X, tv[2].Position.X), 
+			Math::Min3(tv[0].Position.Y, tv[1].Position.Y, tv[2].Position.Y)
+		);
+
+		// tv의 X, Y의 최대값을 maxPos에 저장한다.
+		Vector2 maxPos
+		(
+			Math::Max3(tv[0].Position.X, tv[1].Position.X, tv[2].Position.X),
+			Math::Max3(tv[0].Position.Y, tv[1].Position.Y, tv[2].Position.Y)
+		);
+
+		// 무게중심좌표를 위한 준비작업
+		Vector2 u = tv[1].Position - tv[0].Position;	// 첫번째 점에서 두번째 점으로 향하는 벡터 계산
+		Vector2 v = tv[2].Position - tv[0].Position;	// 첫번째 점에서 세번째 점으로 향하는 벡터 계산
+
+		// 공통 분모 (uv * uv - uu * vv)
+		float udotv = u.Dot(v);
+		float vdotv = v.Dot(v);
+		float udotu = u.Dot(u);
+		float denominator = udotv * udotv - vdotv * udotu; // 이게 공통 분모임
+
+		// 퇴화 삼각형은 그리지 않음
+		if (denominator == 0.f) continue; // denominator == 0 이라면은 퇴화 삼각형이다.
+
+		float invDenominator = 1.f / denominator;
+
+		// 화면상의 점 그리기
+		ScreenPoint lowerLeftPoint = ScreenPoint::ToScreenCoordinate(_ScreenSize, minPos);
+		ScreenPoint upperRightPoint = ScreenPoint::ToScreenCoordinate(_ScreenSize, maxPos);
+
+		// 두 점이 화면 밖을 벗어나는 경우 클리핑 처리
+		lowerLeftPoint.X = Math::Max(0, lowerLeftPoint.X);
+		lowerLeftPoint.Y = Math::Min(_ScreenSize.Y, lowerLeftPoint.Y);
+		upperRightPoint.X = Math::Min(_ScreenSize.X, upperRightPoint.X);
+		upperRightPoint.Y = Math::Max(0, upperRightPoint.Y);
+
+		// 삼각형을 둘러싼 사각형 영역의 픽셀을 모두 순회
+		for (int x = lowerLeftPoint.X; x <= upperRightPoint.X; ++x)
+		{
+			for (int y = upperRightPoint.Y; y <= lowerLeftPoint.Y; ++y)
+			{
+				ScreenPoint fragment = ScreenPoint(x, y);
+				Vector2 pointToTest = fragment.ToCartesianCoordinate(_ScreenSize);
+				Vector2 w = pointToTest - tv[0].Position;
+
+				float wdotu = w.Dot(u);
+				float wdotv = w.Dot(v);
+
+				// 분자값을 구하고 최종 무게 중심좌표 산출
+				float s = (wdotv * udotv - wdotu * vdotv) * invDenominator;
+				float t = (wdotu * udotv - wdotv * udotu) * invDenominator;
+				float oneMinusST = 1.f - s - t;
+				
+				// 컨벡스 조건을 만족할 때만 점 찍기
+				if (((s >= 0.f) && (s <= 1.f)) && ((t >= 0.f) && (t <= 1.f)) && ((oneMinusST >= 0.f) && (oneMinusST <= 1.f)))
+				{
+					r.DrawPoint(fragment, LinearColor::Blue);
+				}
+			}
+		}
 	}
 
 	// 현재 위치, 크기, 각도를 화면에 출력
