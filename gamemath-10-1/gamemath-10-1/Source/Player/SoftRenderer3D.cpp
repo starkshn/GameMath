@@ -66,6 +66,8 @@ void SoftRenderer::Update3D(float InDeltaSeconds)
 	GameEngine& g = Get3DGameEngine();
 	const InputManager& input = g.GetInputManager();
 
+	// Test
+	// 
 	// 게임 로직의 로컬 변수
 	static float moveSpeed = 500.f;
 	static float rotateSpeed = 180.f;
