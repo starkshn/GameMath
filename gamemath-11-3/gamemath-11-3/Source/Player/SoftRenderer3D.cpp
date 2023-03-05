@@ -185,6 +185,7 @@ void SoftRenderer::DrawMesh3D(const Mesh& InMesh, const Matrix4x4& InMatrix, con
 		v.Position = InMatrix * Vector4(result);
 	}
 
+	// 
 	// 삼각형 별로 그리기
 	for (int ti = 0; ti < triangleCount; ++ti)
 	{

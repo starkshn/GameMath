@@ -131,7 +131,6 @@ void SoftRenderer::Render2D()
 		// 3. 회전시킨 점을 이동한다.
 		Vector2 translatedV = rotatedV + currentPosition;
 
-
 		hsv.H = rad / Math::TwoPI;
 		r.DrawPoint(translatedV, hsv.ToLinearColor());
 		rad += increment;

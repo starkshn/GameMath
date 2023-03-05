@@ -55,6 +55,8 @@ void SoftRenderer::LoadScene2D()
 // 게임 로직과 렌더링 로직이 공유하는 변수
 Vector2 CurrentPos(50.f, 50.f);
 
+float currentDegree = 0.f;
+
 
 // 게임 로직을 담당하는 함수
 void SoftRenderer::Update2D(float InDeltaSeconds)
@@ -63,13 +65,13 @@ void SoftRenderer::Update2D(float InDeltaSeconds)
 	auto& g = Get2DGameEngine();
 	const InputManager& input = g.GetInputManager();
 
-	// 게임 로직의 로컬 변수
-	static float MoveSpeed = 100.f;
+	/// 게임 로직의 로컬 변수
+	static float rotateSpeed = 180.f;
 
-	Vector2 InputVector = Vector2(input.GetAxis(InputAxis::XAxis), input.GetAxis(InputAxis::YAxis));
-	Vector2 DeltaPos = InputVector * MoveSpeed * InDeltaSeconds;
+	float deltaDegree = input.GetAxis(InputAxis::WAxis) * rotateSpeed * InDeltaSeconds;
 
-	CurrentPos += DeltaPos;
+	// 물체의 최종 상태 설정
+	currentDegree += deltaDegree;
 }
 
 // 렌더링 로직을 담당하는 함수
@@ -79,30 +81,33 @@ void SoftRenderer::Render2D()
 	auto& r = GetRenderer();
 	const auto& g = Get2DGameEngine();
 
-
 	// 배경에 격자 그리기
 	DrawGizmo2D();
-	
 
-	// 렌더링 로직의 로컬 변수
-	
-	static float LineLength = 500.f;
-	Vector2 LineStart = CurrentPos * LineLength;
-	Vector2 LineEnd = CurrentPos * -LineLength;
-	r.DrawLine(LineStart, LineEnd, LinearColor::LightGray);
+	static float halfSize = 10.f;		 
+	static std::vector<Vector2> squares;
+	if (squares.empty())
+	{
+		for (float x = -halfSize; x <= halfSize; x += 0.5f)
+		{
+			for (float y = -halfSize; y <= halfSize; y += 0.25f)
+			{
+				squares.push_back(Vector2(x + 50, y + 50));
+			}
+		}
+	}
 
-	r.DrawPoint(CurrentPos, LinearColor::Blue);
-	r.DrawPoint(CurrentPos + Vector2::UnitX, LinearColor::Blue);
-	r.DrawPoint(CurrentPos - Vector2::UnitX, LinearColor::Blue);
-	r.DrawPoint(CurrentPos + Vector2::UnitY, LinearColor::Blue);
-	r.DrawPoint(CurrentPos - Vector2::UnitY, LinearColor::Blue);
-	r.DrawPoint(CurrentPos + Vector2::One, LinearColor::Blue);
-	r.DrawPoint(CurrentPos - Vector2::One, LinearColor::Blue);
-	r.DrawPoint(CurrentPos + Vector2(1.f, -1.f), LinearColor::Blue);
-	r.DrawPoint(CurrentPos - Vector2(1.f, -1.f), LinearColor::Blue);
+	for (auto const& v : squares)
+	{
+		Vector2 p = v.ToPolarCoordinate();
+		if (p.Y < 0.f) p.Y += Math::TwoPI;
+		p.Y += Math::Deg2Rad(currentDegree) * 3.f;
+		
+		Vector2 c = p.ToCartesianCoordinate();
+		r.DrawPoint(c, LinearColor::Cyan);
+	}
 
 	r.PushStatisticText("Coordinate : " + CurrentPos.ToString());
-
 }
 
 // 메시를 그리는 함수
