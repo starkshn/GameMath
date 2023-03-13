@@ -109,7 +109,7 @@ void SoftRenderer::Render3D()
 	DrawGizmo3D();
 
 	// 렌더링 로직의 로컬 변수
-	const Matrix4x4 vMatrix = mainCamera.GetViewMatrix();
+	const Matrix4x4 vMatrix = mainCamera.GetViewMatrix();		// camera View 행렬
 	const Matrix4x4 pMatrix = mainCamera.GetPerspectiveMatrix(); // camera의 원근 투영행렬
 
 	for (auto it = g.SceneBegin(); it != g.SceneEnd(); ++it)
@@ -124,7 +124,9 @@ void SoftRenderer::Render3D()
 		const Mesh& mesh = g.GetMesh(gameObject.GetMeshKey());
 		const TransformComponent& transform = gameObject.GetTransform();
 
+		// Model 변환 행렬 * View행렬 * 원근 투영 행렬
 		Matrix4x4 finalMatrix = pMatrix * vMatrix * transform.GetModelingMatrix();
+		// 원근 투영이 적용된 벡터는 Clip좌표를 가진다. 이것을 NDC로 변환해야한다.
 
 		// 메시 그리기
 		DrawMesh3D(mesh, finalMatrix, gameObject.GetColor());
@@ -190,15 +192,20 @@ void SoftRenderer::DrawTriangle3D(std::vector<Vertex3D>& InVertices, const Linea
 	auto& r = GetRenderer();
 	const GameEngine& g = Get3DGameEngine();
 
-	// 클립 좌표를 NDC좌표로 변경
+	// Clip 좌표를 NDC좌표로 변경
 	for (auto& v : InVertices)
 	{
 		// 무한 원점인 경우 약간 보정해준다.
 		if (v.Position.Z == 0) v.Position.Z = SMALL_NUMBER;
 
 		float invZ = 1.f / v.Position.Z;
-		v.Position.X *= invZ; v.Position.Y *= invZ; v.Position.Z *= invZ; // 클립공간의 모든 세 요소에 invZ를 곱해 NDC로 변환한다.
+		v.Position.X *= invZ; 
+		v.Position.Y *= invZ; 
+		v.Position.Z *= invZ; 
+		// 클립공간의 모든 세 요소에 invZ를 곱해 NDC로 변환한다.
 	}
+
+
 
 	// Backface Culling
 	Vector3 edge1 = (InVertices[1].Position - InVertices[0].Position).ToVector3();

@@ -51,7 +51,8 @@ FORCEINLINE Matrix4x4 CameraObject::GetViewMatrix() const
 	GetViewAxes(viewX, viewY, viewZ);
 	Vector3 pos = _Transform.GetPosition();
 
-	return Matrix4x4(
+	return Matrix4x4
+	(
 		Vector4(Vector3(viewX.X, viewY.X, viewZ.X), false),
 		Vector4(Vector3(viewX.Y, viewY.Y, viewZ.Y), false),
 		Vector4(Vector3(viewX.Z, viewY.Z, viewZ.Z), false),
@@ -74,10 +75,12 @@ FORCEINLINE Matrix4x4 CameraObject::GetViewMatrixRotationOnly() const
 
 FORCEINLINE Matrix4x4 CameraObject::GetPerspectiveMatrix() const
 {
-	float invA = 1.f / _ViewportSize.AspectRatio();
-	float d = 1.f / tanf(Math::Deg2Rad(_FOV) * 0.5f);
+	float invA = 1.f / _ViewportSize.AspectRatio();		// 종횡비의 역수
+	float d = 1.f / tanf(Math::Deg2Rad(_FOV) * 0.5f);	// 시야각 절반사용해서 초점 거리 구한다.
 
-	return Matrix4x4(
+	// 이게 원근 투영행렬이다. 원근투영행렬이랑 ndc좌표 구하는 부분 두번으로 나누어서 계산을 할 것이다.
+	return Matrix4x4
+	(
 		Vector4::UnitX * invA * d,
 		Vector4::UnitY * d,
 		Vector4(0.f, 0.f, -1.f, 0.f),
